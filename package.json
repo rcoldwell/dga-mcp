@@ -1,0 +1,19 @@
+{
+    "name": "guitar-archive-mcp",
+    "version": "1.0.0",
+    "description": "MCP Server for Digital Guitar Archive",
+    "main": "dist/mcp-server.js",
+    "scripts": {
+        "build": "npx tsc",
+        "start": "node dist/mcp-server.js"
+    },
+    "dependencies": {
+        "dotenv": "^16.3.1",
+        "fastmcp": "^3.29.0",
+        "zod": "^3.22.4"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.6",
+        "typescript": "^5.3.3"
+    }
+}
