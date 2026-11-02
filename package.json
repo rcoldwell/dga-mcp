@@ -9,8 +9,8 @@
     },
     "dependencies": {
         "dotenv": "^16.3.1",
-        "fastmcp": "^3.29.0",
-        "zod": "^3.22.4"
+        "fastmcp": "^4.23.13",
+        "zod": "^4.6.7"
     },
     "devDependencies": {
         "@types/node": "^20.10.6",
