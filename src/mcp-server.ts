@@ -7,7 +7,7 @@ const REQUEST_TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS || "15000", 1
 
 const mcp = new FastMCP({
     name: "GuitarArchiveAPI",
-    version: "1.1.0"
+    version: "1.2.0"
 });
 
 // Helper to call the API with a configurable timeout
@@ -26,6 +26,49 @@ async function apiCall(endpoint: string): Promise<any> {
     }
 }
 
+// Mapping of Local ID values to human-readable collection names.
+// The "Source" field is a RISM library sigla, but many collections are not
+// libraries (private holdings, journals). The "Local ID" column carries the
+// actual collection identifier; this map resolves it to a readable name.
+const COLLECTION_NAMES: Record<string, string> = {
+    etude: "The Etude - music journal 1930-1943 (text)",
+    ribs: "Rischel & Birket-Smith - Royal Library of Denmark",
+    fvg: "Freie Vereinigung - Augsburg State Library",
+    krick_colo: "Krick - University of Colorado, Boulder",
+    krick_wash: "Krick - Washington University",
+    nakano: "Nakano - Doshisha University",
+    boije: "Boije - Music Library of Sweden",
+    hudleston: "Hudleston - Royal Irish Academy of Music",
+    loc_nation: "Music for the Nation - Library of Congress",
+    loc_edison: "Historic Sheet Music - Library of Congress",
+    levy: "Levy - Johns Hopkins University",
+    gam: "Gitarristisches Archiv - Munich State Library",
+    gfa: "GFA Archive - Guitar Foundation of America",
+    ricca: "Luigi Ricca - Comune di Codogno",
+    Ricordi: "Catalogo Numerico Ricordi",
+    seville: "Seville - Conservatorio Superior de Música Manuel Castillo",
+    sparr: "Kenneth Sparr - Private Collection",
+    swingle: "Mary Belle Swingle - Yale University",
+    coldwell: "Vorhauer Collection",
+    "Walter-Wiedemann": "Gitarristische Sammlung Fritz Walter und Gabriele Wiedemann",
+    scheit: "Scheit Archive"
+};
+
+// Resolve a Local ID to a human-readable collection name.
+// Returns null when the Local ID is empty or unknown. Matching falls back to
+// case-insensitive, since DB values may vary in case.
+function resolveCollectionName(localId: unknown): string | null {
+    if (localId === null || localId === undefined) return null;
+    const key = String(localId).trim();
+    if (key === "") return null;
+    if (COLLECTION_NAMES[key]) return COLLECTION_NAMES[key];
+    const lower = key.toLowerCase();
+    for (const [k, v] of Object.entries(COLLECTION_NAMES)) {
+        if (k.toLowerCase() === lower) return v;
+    }
+    return null;
+}
+
 // Helper to format a list of search/browse results
 function formatRecordList(data: any, offset: number): string {
     const total = data.total ?? 0;
@@ -42,8 +85,11 @@ function formatRecordList(data: any, offset: number): string {
 
     const output = [`Found ${total} records (showing ${showingFrom}–${showingTo}):`];
     for (const r of results) {
+        const source = r.source || "unknown";
+        const collection = resolveCollectionName(r.local_ID);
+        const suffix = collection ? ` — ${collection}` : "";
         output.push(
-            `- [ID: ${r.id}] ${r.title} by ${r.author} (${r.publish_date || "n.d."}) [${r.source || "unknown"}]`
+            `- [ID: ${r.id}] ${r.title} by ${r.author} (${r.publish_date || "n.d."}) [${source}${suffix}]`
         );
     }
 
@@ -161,6 +207,7 @@ mcp.addTool({
                 ["Source ID", r.source_ID],
                 ["Source Call", r.source_Call],
                 ["Local ID", r.local_ID],
+                ["Collection", resolveCollectionName(r.local_ID)],
                 ["Source Notes 1", r.source_notes1],
                 ["Source Notes 2", r.source_notes2],
                 ["Source Notes 3", r.source_notes3],
@@ -207,6 +254,22 @@ mcp.addTool({
         } catch (error) {
             throw new Error(`API error: ${error}`);
         }
+    }
+});
+
+// Tool: List known collections (Local ID → collection name)
+mcp.addTool({
+    name: "list_collections",
+    description:
+        "List the known collections in the archive, mapping each Local ID to its human-readable collection name and institution. Use this to interpret the Local ID field in record details: many collections are private holdings or journals rather than RISM library sigla, so the Source field alone does not identify them.",
+    parameters: z.object({}),
+    execute: async () => {
+        const entries = Object.entries(COLLECTION_NAMES);
+        const output = [`Found ${entries.length} known collections:`];
+        for (const [id, name] of entries) {
+            output.push(`- ${id}: ${name}`);
+        }
+        return output.join("\n");
     }
 });
 

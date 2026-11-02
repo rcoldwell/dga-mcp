@@ -12,6 +12,7 @@ The server is pre-configured to connect to the Digital Guitar Archive API at `ht
 - **browse_by_source** — Browse records from a specific source library (RISM sigla) with pagination
 - **get_record_details** — Get full bibliographic details for a specific record by ID
 - **list_sources** — List all source libraries (RISM sigla) with record counts and location info
+- **list_collections** — List known collections by Local ID with human-readable collection names (some collections are private holdings or journals, not RISM library sigla)
 
 ### Prompts
 
@@ -88,6 +89,10 @@ npx ts-node src/mcp-server.ts
 ```
 
 Note: When running with stdio transport, the server communicates via stdin/stdout and won't produce visible output. The server acts as a proxy to the live production API.
+
+## Collections vs. Sources
+
+The `Source` field is a RISM library sigla, but not every collection lives in a library — some are private holdings or journals. The `Local ID` field carries the actual collection identifier, resolved to a readable name via `list_collections` and shown as `Collection` in `get_record_details` (and appended to the source in search/browse results when present).
 
 ## Pagination
 

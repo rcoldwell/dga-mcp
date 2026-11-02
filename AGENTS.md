@@ -53,6 +53,7 @@ There is **no test suite** and **no linter** configured. After edits, verify wit
    - `browse_by_source` — scoped to a RISM sigla `source`; reuses the `/search` endpoint.
    - `get_record_details` — fetches `/record/{id}` and renders non-empty fields as `Label: value` lines.
    - `list_sources` — enumerates source libraries with record counts and locations.
+   - `list_collections` — enumerates known `Local ID` → collection-name mappings; resolves non-library collections (private holdings, journals) that the `Source` RISM sigla alone does not describe.
 5. **Prompt** — `research_library_collection`, a guided research workflow template.
 6. **Resource template** — `archive://record/{id}` returns raw record JSON.
 7. **`mcp.start({ transportType: "stdio" })`** — the server communicates over stdin/stdout only.
@@ -66,6 +67,7 @@ Tool parameters are validated with Zod schemas passed directly to `addTool`. Too
 - **Strict TypeScript.** Do not weaken `strict` mode. Avoid `any` where a type is feasible (the API helpers currently use `any` because the upstream schema is not formally typed).
 - **Tool return values are strings.** Format data for human readability; throw `Error` on upstream failures so the MCP client surfaces them.
 - **All upstream requests go through `apiCall`.** Do not call `fetch` directly elsewhere — the timeout and error handling are centralized there.
+- **`COLLECTION_NAMES` maps `Local ID` → collection name.** Keep it in sync with the upstream Local ID mapping; `resolveCollectionName` is used in `formatRecordList`, `get_record_details`, and `list_collections`. Matching falls back to case-insensitive for DB variance.
 - **Env over hardcoding.** New configurable values should read from `process.env` with a sensible default, and be documented in the README configuration table.
 
 ## Environment Variables
@@ -79,7 +81,7 @@ Tool parameters are validated with Zod schemas passed directly to `addTool`. Too
 
 The server assumes these endpoints and response shapes from the archive API:
 
-- `GET /search?q=&title=&author=&source=&publisher=&limit=&offset=` → `{ total: number, results: [{ id, title, author, publish_date, source }] }`
+- `GET /search?q=&title=&author=&source=&publisher=&limit=&offset=` → `{ total: number, results: [{ id, title, author, publish_date, source, local_ID? }] }`
 - `GET /record/{id}` → a record object with many optional fields (title, author, publisher, opus, instruments, source, etc.), or `{ error: ... }` when missing.
 - `GET /sources` → `{ total: number, sources: [{ source, name, country, record_count }] }`
 
