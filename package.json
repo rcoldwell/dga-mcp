@@ -1,6 +1,6 @@
 {
     "name": "guitar-archive-mcp",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "MCP Server for Digital Guitar Archive",
     "main": "dist/mcp-server.js",
     "scripts": {
